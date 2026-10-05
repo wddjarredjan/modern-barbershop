@@ -46,6 +46,15 @@ const buildBookingEmailMessage = (booking: { fullName: string; phone: string; se
   return `New booking request from ${booking.fullName} (${booking.phone}) for ${booking.service} on ${booking.dateTime}${noteText ? ` Notes: ${noteText}` : ''}`;
 };
 
+const getBookingSubmissionUrl = () => {
+  const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+  return configuredBaseUrl ? `${configuredBaseUrl}/api/bookings` : '/api/bookings';
+};
+
+const getBookingMailtoHref = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
+  return `mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('New Booking Request')}&body=${encodeURIComponent(buildBookingEmailMessage(booking))}`;
+};
+
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -116,14 +125,26 @@ export default function App() {
       return;
     }
 
+    const payload = bookingForm;
     setBookingLoading(true);
     try {
-      const res = await fetch('/api/bookings', {
+      const res = await fetch(getBookingSubmissionUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookingForm)
+        body: JSON.stringify(payload)
       });
-      const data = await res.json();
+
+      const rawResponse = await res.text();
+      let data: any = {};
+
+      if (rawResponse) {
+        try {
+          data = JSON.parse(rawResponse);
+        } catch {
+          data = { error: rawResponse };
+        }
+      }
+
       if (res.ok) {
         setLastBookingResult(data);
         setBookingsList(prev => [data.booking, ...prev]);
@@ -136,11 +157,49 @@ export default function App() {
           notes: ''
         });
       } else {
-        alert(data.error || 'Failed to submit booking.');
+        const fallbackHref = getBookingMailtoHref(payload);
+        window.location.href = fallbackHref;
+        setLastBookingResult({
+          success: true,
+          booking: payload,
+          notification: {
+            recipient: BOOKING_EMAIL_RECEIVER,
+            message: buildBookingEmailMessage(payload),
+            emailSent: false,
+            fallbackMode: true
+          }
+        });
+        setBookingSuccessModal(true);
+        setBookingForm({
+          fullName: '',
+          phone: '',
+          service: 'Modern Haircut & Styling',
+          dateTime: '',
+          notes: ''
+        });
       }
     } catch (err) {
       console.error(err);
-      alert(`Network error while booking. Please call ${MAIN_PHONE_NUMBER_DISPLAY} directly.`);
+      const fallbackHref = getBookingMailtoHref(payload);
+      window.location.href = fallbackHref;
+      setLastBookingResult({
+        success: true,
+        booking: payload,
+        notification: {
+          recipient: BOOKING_EMAIL_RECEIVER,
+          message: buildBookingEmailMessage(payload),
+          emailSent: false,
+          fallbackMode: true
+        }
+      });
+      setBookingSuccessModal(true);
+      setBookingForm({
+        fullName: '',
+        phone: '',
+        service: 'Modern Haircut & Styling',
+        dateTime: '',
+        notes: ''
+      });
     } finally {
       setBookingLoading(false);
     }
