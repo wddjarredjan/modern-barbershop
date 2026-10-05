@@ -85,43 +85,25 @@ async function startServer() {
       const emailPass = process.env.EMAIL_PASS;
       const emailFrom = process.env.EMAIL_FROM || emailUser || emailRecipient;
 
-      if (!emailHost || !emailUser || !emailPass || !emailRecipient) {
-        console.error('Email configuration missing. Required env vars: EMAIL_HOST, EMAIL_USER, EMAIL_PASS, EMAIL_TO');
-        return res.status(500).json({
-          error: 'Booking email is not configured. Please add EMAIL_HOST, EMAIL_USER, EMAIL_PASS, and EMAIL_TO in Vercel.'
-        });
-      }
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: Number(process.env.EMAIL_PORT || 587),
+        secure: Number(process.env.EMAIL_PORT || 587) === 465,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
 
-      try {
-        const transporter = nodemailer.createTransport({
-          host: emailHost,
-          port: emailPort,
-          secure: Number(emailPort) === 465,
-          auth: {
-            user: emailUser,
-            pass: emailPass
-          },
-          tls: {
-            rejectUnauthorized: false
-          }
-        });
+      await transporter.sendMail({
+        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+        to: process.env.EMAIL_TO || 'modernbarbershopbykarl@gmail.com',
+        subject: 'New Barbershop Booking',
+        text: 'A new booking was submitted.',
+      });
 
-        await transporter.sendMail({
-          from: emailFrom,
-          to: emailRecipient,
-          subject: emailSubject,
-          text: emailMessage,
-          html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || 'None'}</p>`
-        });
-
-        emailSent = true;
-        console.log(`[EMAIL SENT to ${emailRecipient}]`);
-      } catch (emailErr: any) {
-        console.error('Failed to send booking email:', emailErr);
-        return res.status(500).json({
-          error: `Booking email failed to send: ${emailErr?.message || 'Unknown SMTP error'}`
-        });
-      }
+      emailSent = true;
+      console.log(`[EMAIL SENT to ${emailRecipient}]`);
 
       res.status(201).json({
         success: true,
