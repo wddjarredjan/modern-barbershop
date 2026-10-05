@@ -1,0 +1,7 @@
+{
+  "name": "Modern Barbershop by Karl",
+  "description": "Precision Cuts & Modern Styling by Karl. Premium grooming, hot towel shaves, and instant online booking with SMS notifications.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
