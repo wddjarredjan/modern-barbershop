@@ -39,7 +39,7 @@ interface Booking {
 
 const MAIN_PHONE_NUMBER = '+639301911512';
 const MAIN_PHONE_NUMBER_DISPLAY = '+63 930 191 1512';
-const BOOKING_EMAIL_RECEIVER = import.meta.env.VITE_BOOKING_EMAIL || import.meta.env.VITE_EMAIL_TO || 'karl@gmail.com';
+const BOOKING_EMAIL_RECEIVER = import.meta.env.VITE_BOOKING_EMAIL || import.meta.env.VITE_EMAIL_TO || 'modernbarbershopbykarl@gmail.com';
 
 const buildBookingEmailMessage = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
   const noteText = booking.notes?.trim();

@@ -48,7 +48,7 @@ async function startServer() {
         createdAt: (/* @__PURE__ */ new Date()).toISOString()
       };
       bookings.unshift(newBooking);
-      const emailRecipient = process.env.EMAIL_TO || "karl@gmail.com";
+      const emailRecipient = process.env.EMAIL_TO || "modernbarbershopbykarl@gmail.com";
       const emailSubject = `New Barbershop Booking: ${fullName}`;
       const emailMessage = `New Booking
 
@@ -65,30 +65,40 @@ This booking was submitted through the website.`;
       const emailPort = Number(process.env.EMAIL_PORT || 587);
       const emailUser = process.env.EMAIL_USER;
       const emailPass = process.env.EMAIL_PASS;
-      const emailFrom = process.env.EMAIL_FROM || emailUser;
-      if (emailHost && emailUser && emailPass) {
-        try {
-          const transporter = nodemailer.createTransport({
-            host: emailHost,
-            port: emailPort,
-            secure: Number(emailPort) === 465,
-            auth: {
-              user: emailUser,
-              pass: emailPass
-            }
-          });
-          await transporter.sendMail({
-            from: emailFrom,
-            to: emailRecipient,
-            subject: emailSubject,
-            text: emailMessage,
-            html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
-          });
-          emailSent = true;
-          console.log(`[EMAIL SENT to ${emailRecipient}]`);
-        } catch (emailErr) {
-          console.error("Failed to send booking email:", emailErr);
-        }
+      const emailFrom = process.env.EMAIL_FROM || emailUser || emailRecipient;
+      if (!emailHost || !emailUser || !emailPass || !emailRecipient) {
+        console.error("Email configuration missing. Required env vars: EMAIL_HOST, EMAIL_USER, EMAIL_PASS, EMAIL_TO");
+        return res.status(500).json({
+          error: "Booking email is not configured. Please add EMAIL_HOST, EMAIL_USER, EMAIL_PASS, and EMAIL_TO in Vercel."
+        });
+      }
+      try {
+        const transporter = nodemailer.createTransport({
+          host: emailHost,
+          port: emailPort,
+          secure: Number(emailPort) === 465,
+          auth: {
+            user: emailUser,
+            pass: emailPass
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        await transporter.sendMail({
+          from: emailFrom,
+          to: emailRecipient,
+          subject: emailSubject,
+          text: emailMessage,
+          html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
+        });
+        emailSent = true;
+        console.log(`[EMAIL SENT to ${emailRecipient}]`);
+      } catch (emailErr) {
+        console.error("Failed to send booking email:", emailErr);
+        return res.status(500).json({
+          error: `Booking email failed to send: ${emailErr?.message || "Unknown SMTP error"}`
+        });
       }
       res.status(201).json({
         success: true,
