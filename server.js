@@ -9,6 +9,29 @@ import nodemailer from "nodemailer";
 dotenv.config();
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
+function getEmailConfig() {
+  const emailHost = process.env.EMAIL_HOST;
+  const emailPort = Number(process.env.EMAIL_PORT || 587);
+  const emailUser = process.env.EMAIL_USER;
+  const emailPass = process.env.EMAIL_PASS;
+  const emailFrom = process.env.EMAIL_FROM || emailUser || "modernbarbershopbykarl@gmail.com";
+  const emailTo = process.env.EMAIL_TO || "modernbarbershopbykarl@gmail.com";
+  const missing = [];
+  if (!emailHost) missing.push("EMAIL_HOST");
+  if (!emailUser) missing.push("EMAIL_USER");
+  if (!emailPass) missing.push("EMAIL_PASS");
+  if (!emailTo) missing.push("EMAIL_TO");
+  return {
+    emailHost,
+    emailPort,
+    emailUser,
+    emailPass,
+    emailFrom,
+    emailTo,
+    missing,
+    configured: missing.length === 0
+  };
+}
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT || 3e3;
@@ -31,6 +54,16 @@ async function startServer() {
   app.get("/api/bookings", (req, res) => {
     res.json(bookings);
   });
+  app.get("/api/email-status", (req, res) => {
+    const config = getEmailConfig();
+    res.json({
+      configured: config.configured,
+      missing: config.missing,
+      host: config.emailHost || "missing",
+      user: config.emailUser || "missing",
+      recipient: config.emailTo || "missing"
+    });
+  });
   app.post("/api/bookings", async (req, res) => {
     try {
       const { fullName, phone, service, dateTime, notes } = req.body;
@@ -48,7 +81,8 @@ async function startServer() {
         createdAt: (/* @__PURE__ */ new Date()).toISOString()
       };
       bookings.unshift(newBooking);
-      const emailRecipient = process.env.EMAIL_TO || "modernbarbershopbykarl@gmail.com";
+      const config = getEmailConfig();
+      const emailRecipient = config.emailTo;
       const emailSubject = `New Barbershop Booking: ${fullName}`;
       const emailMessage = `New Booking
 
@@ -61,25 +95,31 @@ Notes: ${notes || "None"}
 This booking was submitted through the website.`;
       console.log(`[EMAIL NOTIFICATION DISPATCHED to ${emailRecipient}]: ${emailSubject}`);
       let emailSent = false;
-      const emailHost = process.env.EMAIL_HOST;
-      const emailPort = Number(process.env.EMAIL_PORT || 587);
-      const emailUser = process.env.EMAIL_USER;
-      const emailPass = process.env.EMAIL_PASS;
-      const emailFrom = process.env.EMAIL_FROM || emailUser || emailRecipient;
+      if (!config.configured) {
+        console.error("Email configuration missing. Missing values:", config.missing.join(", "));
+        return res.status(500).json({
+          error: `Booking email is not configured. Missing: ${config.missing.join(", ")}`,
+          missing: config.missing
+        });
+      }
       const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: Number(process.env.EMAIL_PORT || 587),
-        secure: Number(process.env.EMAIL_PORT || 587) === 465,
+        host: config.emailHost,
+        port: config.emailPort,
+        secure: config.emailPort === 465,
         auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
+          user: config.emailUser,
+          pass: config.emailPass
+        },
+        tls: {
+          rejectUnauthorized: false
         }
       });
       await transporter.sendMail({
-        from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-        to: process.env.EMAIL_TO || "karl@gmail.com",
-        subject: "New Barbershop Booking",
-        text: "A new booking was submitted."
+        from: config.emailFrom,
+        to: config.emailTo,
+        subject: emailSubject,
+        text: emailMessage,
+        html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
       });
       emailSent = true;
       console.log(`[EMAIL SENT to ${emailRecipient}]`);
