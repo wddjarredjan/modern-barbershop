@@ -6,22 +6,25 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import nodemailer from "nodemailer";
+import { Resend } from "resend";
 dotenv.config();
 var __filename = fileURLToPath(import.meta.url);
 var __dirname = path.dirname(__filename);
 function getEmailConfig() {
+  const resendApiKey = process.env.RESEND_API_KEY;
   const emailHost = process.env.EMAIL_HOST;
   const emailPort = Number(process.env.EMAIL_PORT || 587);
   const emailUser = process.env.EMAIL_USER;
   const emailPass = process.env.EMAIL_PASS;
-  const emailFrom = process.env.EMAIL_FROM || emailUser || "modernbarbershopbykarl@gmail.com";
+  const emailFrom = process.env.EMAIL_FROM || "onboarding@resend.dev";
   const emailTo = process.env.EMAIL_TO || "modernbarbershopbykarl@gmail.com";
   const missing = [];
-  if (!emailHost) missing.push("EMAIL_HOST");
-  if (!emailUser) missing.push("EMAIL_USER");
-  if (!emailPass) missing.push("EMAIL_PASS");
   if (!emailTo) missing.push("EMAIL_TO");
+  if (!resendApiKey && !emailHost) missing.push("RESEND_API_KEY or EMAIL_HOST");
+  if (!resendApiKey && !emailUser) missing.push("EMAIL_USER");
+  if (!resendApiKey && !emailPass) missing.push("EMAIL_PASS");
   return {
+    resendApiKey,
     emailHost,
     emailPort,
     emailUser,
@@ -59,6 +62,7 @@ async function startServer() {
     res.json({
       configured: config.configured,
       missing: config.missing,
+      provider: config.resendApiKey ? "resend" : config.emailHost ? "smtp" : "missing",
       host: config.emailHost || "missing",
       user: config.emailUser || "missing",
       recipient: config.emailTo || "missing"
@@ -102,27 +106,44 @@ This booking was submitted through the website.`;
           missing: config.missing
         });
       }
-      const transporter = nodemailer.createTransport({
-        host: config.emailHost,
-        port: config.emailPort,
-        secure: config.emailPort === 465,
-        auth: {
-          user: config.emailUser,
-          pass: config.emailPass
-        },
-        tls: {
-          rejectUnauthorized: false
+      if (config.resendApiKey) {
+        const resend = new Resend(config.resendApiKey);
+        const { error } = await resend.emails.send({
+          from: config.emailFrom,
+          to: [config.emailTo],
+          subject: emailSubject,
+          text: emailMessage,
+          html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
+        });
+        if (error) {
+          console.error("Resend send failed:", error);
+          return res.status(500).json({ error: error.message || "Failed to send booking email via Resend." });
         }
-      });
-      await transporter.sendMail({
-        from: config.emailFrom,
-        to: config.emailTo,
-        subject: emailSubject,
-        text: emailMessage,
-        html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
-      });
-      emailSent = true;
-      console.log(`[EMAIL SENT to ${emailRecipient}]`);
+        emailSent = true;
+        console.log(`[EMAIL SENT via Resend to ${emailRecipient}]`);
+      } else {
+        const transporter = nodemailer.createTransport({
+          host: config.emailHost,
+          port: config.emailPort,
+          secure: config.emailPort === 465,
+          auth: {
+            user: config.emailUser,
+            pass: config.emailPass
+          },
+          tls: {
+            rejectUnauthorized: false
+          }
+        });
+        await transporter.sendMail({
+          from: config.emailFrom,
+          to: config.emailTo,
+          subject: emailSubject,
+          text: emailMessage,
+          html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
+        });
+        emailSent = true;
+        console.log(`[EMAIL SENT via SMTP to ${emailRecipient}]`);
+      }
       res.status(201).json({
         success: true,
         message: "Appointment booked successfully! A live booking email has been sent to the receiver.",
