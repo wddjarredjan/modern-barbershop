@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import dotenv from 'dotenv';
-import twilio from 'twilio';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
@@ -50,7 +50,7 @@ async function startServer() {
     res.json(bookings);
   });
 
-  // Create booking & trigger SMS notification simulation
+  // Create booking & trigger live email notification
   app.post('/api/bookings', async (req, res) => {
     try {
       const { fullName, phone, service, dateTime, notes } = req.body;
@@ -72,36 +72,55 @@ async function startServer() {
 
       bookings.unshift(newBooking);
 
-      const barberPhone = '+639301911512';
-      const smsMessage = `New Booking: ${fullName} (${phone}) for @ ${dateTime} (${service})${notes ? ` - ${notes}` : ''}`;
+      const emailRecipient = process.env.EMAIL_TO || 'karl@gmail.com';
+      const emailSubject = `New Barbershop Booking: ${fullName}`;
+      const emailMessage = `New Booking\n\nClient: ${fullName}\nPhone: ${phone}\nService: ${service}\nDate & Time: ${dateTime}\nNotes: ${notes || 'None'}\n\nThis booking was submitted through the website.`;
 
-      console.log(`[SMS NOTIFICATION DISPATCHED to Karl @ ${barberPhone}]: ${smsMessage}`);
+      console.log(`[EMAIL NOTIFICATION DISPATCHED to ${emailRecipient}]: ${emailSubject}`);
 
-      const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+      let emailSent = false;
+      const emailHost = process.env.EMAIL_HOST;
+      const emailPort = Number(process.env.EMAIL_PORT || 587);
+      const emailUser = process.env.EMAIL_USER;
+      const emailPass = process.env.EMAIL_PASS;
+      const emailFrom = process.env.EMAIL_FROM || emailUser;
 
-      let twilioSent = false;
-      if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_PHONE_NUMBER) {
+      if (emailHost && emailUser && emailPass) {
         try {
-          await client.messages.create({
-            body: smsMessage,
-            from: process.env.TWILIO_PHONE_NUMBER,
-            to: barberPhone
+          const transporter = nodemailer.createTransport({
+            host: emailHost,
+            port: emailPort,
+            secure: Number(emailPort) === 465,
+            auth: {
+              user: emailUser,
+              pass: emailPass
+            }
           });
-          twilioSent = true;
-          console.log(`[TWILIO SMS SENT to Karl @ ${barberPhone}]`);
-        } catch (twilioErr: any) {
-          console.error('Failed to send Twilio SMS:', twilioErr);
+
+          await transporter.sendMail({
+            from: emailFrom,
+            to: emailRecipient,
+            subject: emailSubject,
+            text: emailMessage,
+            html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || 'None'}</p>`
+          });
+
+          emailSent = true;
+          console.log(`[EMAIL SENT to ${emailRecipient}]`);
+        } catch (emailErr: any) {
+          console.error('Failed to send booking email:', emailErr);
         }
       }
 
       res.status(201).json({
         success: true,
-        message: 'Appointment booked successfully! Instant notification sent to Karl.',
+        message: 'Appointment booked successfully! A live booking email has been sent to the receiver.',
         booking: newBooking,
         notification: {
-          recipient: barberPhone,
-          message: smsMessage,
-          twilioIntegrated: twilioSent
+          recipient: emailRecipient,
+          subject: emailSubject,
+          message: emailMessage,
+          emailSent
         }
       });
     } catch (err: any) {

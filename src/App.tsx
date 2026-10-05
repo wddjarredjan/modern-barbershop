@@ -39,8 +39,9 @@ interface Booking {
 
 const MAIN_PHONE_NUMBER = '+639301911512';
 const MAIN_PHONE_NUMBER_DISPLAY = '+63 930 191 1512';
+const BOOKING_EMAIL_RECEIVER = import.meta.env.VITE_BOOKING_EMAIL || import.meta.env.VITE_EMAIL_TO || 'karl@gmail.com';
 
-const buildBookingSmsMessage = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
+const buildBookingEmailMessage = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
   const noteText = booking.notes?.trim();
   return `New booking request from ${booking.fullName} (${booking.phone}) for ${booking.service} on ${booking.dateTime}${noteText ? ` Notes: ${noteText}` : ''}`;
 };
@@ -124,11 +125,6 @@ export default function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        const bookingSmsMessage = buildBookingSmsMessage(bookingForm);
-        if (typeof window !== 'undefined') {
-          window.location.href = `sms:${MAIN_PHONE_NUMBER}?body=${encodeURIComponent(bookingSmsMessage)}`;
-        }
-
         setLastBookingResult(data);
         setBookingsList(prev => [data.booking, ...prev]);
         setBookingSuccessModal(true);
@@ -475,7 +471,7 @@ export default function App() {
                   'Premium Pomades & Oils',
                   'In-Shop Snacks & Drinks',
                   'Strict Sterilization Protocols',
-                  'Easy Online Booking & SMS'
+                  'Easy Online Booking & Email'
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-center gap-3 text-sm text-slate-800 font-medium">
                     <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
@@ -657,7 +653,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* Booking Form & SMS Notification Section */}
+      {/* Booking Form & Email Notification Section */}
       <section id="booking" className="py-24 bg-slate-50 border-t border-slate-200 relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -668,13 +664,13 @@ export default function App() {
 
             <div className="text-center max-w-xl mx-auto space-y-3 mb-10">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 text-xs font-bold tracking-wide uppercase">
-                <Calendar className="w-3.5 h-3.5" /> Instant Booking & SMS Notice
+                <Calendar className="w-3.5 h-3.5" /> Instant Booking & Email Notice
               </div>
               <h2 className="text-3xl font-extrabold text-slate-900 font-serif">
                 Book Your Chair With Karl
               </h2>
               <p className="text-slate-600 text-sm">
-                Fill out the form below. An instant SMS notification will be dispatched directly to Karl's phone (<strong className="text-amber-600">{MAIN_PHONE_NUMBER_DISPLAY}</strong>).
+                Fill out the form below. A live booking email will be sent directly to Karl's inbox for instant review.
               </p>
             </div>
 
@@ -760,7 +756,7 @@ export default function App() {
                   onClick={() => setShowIntegrationModal(true)}
                   className="text-xs text-amber-600 hover:underline font-semibold flex items-center gap-1.5"
                 >
-                  <Code className="w-4 h-4" /> View Twilio SMS / WhatsApp Code Integration
+                  <Code className="w-4 h-4" /> View Email Notification Setup
                 </button>
 
                 <button 
@@ -771,11 +767,11 @@ export default function App() {
                   {bookingLoading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Submitting & Dispatching SMS...</span>
+                      <span>Submitting & Sending Email...</span>
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" /> Confirm & Send SMS to Karl
+                      <Send className="w-4 h-4" /> Confirm & Submit to Karl Email
                     </>
                   )}
                 </button>
@@ -800,7 +796,7 @@ export default function App() {
                       </div>
                     </div>
                     <span className="bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-3 py-1 rounded-full font-bold text-[10px] flex items-center gap-1">
-                      <Check className="w-3 h-3" /> SMS Dispatched
+                      <Check className="w-3 h-3" /> Email Sent
                     </span>
                   </div>
                 ))}
@@ -834,9 +830,9 @@ export default function App() {
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-500 border-b border-slate-200 pb-2">
                 <span className="font-bold text-amber-600 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" /> Instant SMS Webhook Dispatched
+                  <Phone className="w-3.5 h-3.5" /> Booking Email Sent
                 </span>
-                <span>To: +639301911512 (Karl)</span>
+                <span>To: Karl's Email Inbox</span>
               </div>
               <p className="text-xs font-mono text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
                 "{lastBookingResult.notification?.message}"
@@ -845,10 +841,10 @@ export default function App() {
 
             <div className="flex gap-3 pt-2">
               <a 
-                href={`sms:${MAIN_PHONE_NUMBER}?body=${encodeURIComponent(buildBookingSmsMessage(lastBookingResult.booking))}`} 
+                href={`mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('New Booking Request')}&body=${encodeURIComponent(buildBookingEmailMessage(lastBookingResult.booking))}`} 
                 className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs text-center border border-slate-200"
               >
-                Text Karl
+                Email Karl
               </a>
               <button 
                 onClick={() => setBookingSuccessModal(false)}
@@ -867,7 +863,7 @@ export default function App() {
           <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
             <div className="flex items-center justify-between border-b border-slate-200 pb-4">
               <h3 className="text-xl font-bold text-slate-900 font-serif flex items-center gap-2">
-                <Code className="w-5 h-5 text-amber-600" /> Twilio SMS & WhatsApp Webhook Integration Guide
+                <Code className="w-5 h-5 text-amber-600" /> Email Booking Notification Setup
               </h3>
               <button 
                 onClick={() => setShowIntegrationModal(false)}
@@ -879,31 +875,33 @@ export default function App() {
 
             <div className="space-y-4 text-xs text-slate-600">
               <p className="leading-relaxed">
-                To route live bookings directly to Karl's phone number (<strong className="text-amber-600">{MAIN_PHONE_NUMBER_DISPLAY}</strong>) via SMS or WhatsApp, configure the following Node.js / Express snippet in <code className="bg-slate-100 px-1.5 py-0.5 rounded text-amber-700 font-bold">server.ts</code>:
+                To send each live booking directly to Karl's email inbox, configure the following SMTP-based email flow in <code className="bg-slate-100 px-1.5 py-0.5 rounded text-amber-700 font-bold">server.ts</code>:
               </p>
 
               <pre className="bg-slate-950 text-amber-200 p-4 rounded-2xl border border-slate-800 text-[11px] font-mono overflow-x-auto">
-{`import twilio from 'twilio';
+{`import nodemailer from 'nodemailer';
 
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST,
+  port: Number(process.env.EMAIL_PORT || 587),
+  secure: Number(process.env.EMAIL_PORT || 587) === 465,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
-app.post('/api/bookings', async (req, res) => {
-  const { fullName, phone, service, dateTime } = req.body;
-  
-  // Send SMS to Karl
-  await client.messages.create({
-    body: \`New Booking: \${fullName} (\${phone}) for \@ \${dateTime} (\${service})\`,
-    from: process.env.TWILIO_PHONE_NUMBER,
-    to: '+639301911512'
-  });
-
-  res.json({ success: true });
+await transporter.sendMail({
+  from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+  to: process.env.EMAIL_TO || 'karl@gmail.com',
+  subject: 'New Barbershop Booking',
+  text: 'A new booking was submitted.',
 });`}
               </pre>
 
               <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl text-amber-900">
                 <span className="font-bold block mb-1">Environment Variables Required:</span>
-                <code>TWILIO_ACCOUNT_SID</code>, <code>TWILIO_AUTH_TOKEN</code>, <code>TWILIO_PHONE_NUMBER</code>
+                <code>EMAIL_HOST</code>, <code>EMAIL_PORT</code>, <code>EMAIL_USER</code>, <code>EMAIL_PASS</code>, <code>EMAIL_FROM</code>, <code>EMAIL_TO</code>
               </div>
             </div>
 
@@ -1025,8 +1023,8 @@ app.post('/api/bookings', async (req, res) => {
       {/* Floating CTA Buttons */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
         <a 
-          href={`sms:${MAIN_PHONE_NUMBER}?body=${encodeURIComponent('Hi Karl, I would like to book an appointment.')}`} 
-          aria-label="Text Barbershop"
+          href={`mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('Booking Inquiry')}&body=${encodeURIComponent('Hi Karl, I would like to book an appointment.')}`} 
+          aria-label="Email Barbershop"
           className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-xl transition-transform hover:scale-110"
         >
           <MessageCircle className="w-6 h-6" />
