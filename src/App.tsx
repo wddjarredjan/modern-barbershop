@@ -4,109 +4,73 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Scissors, 
-  Phone, 
-  MessageCircle, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Star, 
-  CheckCircle2, 
-  ShieldCheck, 
-  User, 
-  Menu, 
-  X, 
-  ChevronRight, 
-  Info, 
-  DollarSign,
-  Send,
-  Code,
-  Check
+import {
+  Scissors,
+  Phone,
+  MessageCircle,
+  Clock,
+  MapPin,
+  Star,
+  CheckCircle2,
+  ShieldCheck,
+  Menu,
+  X,
+  ChevronRight,
+  ChevronLeft,
+  Info,
+  DollarSign
 } from 'lucide-react';
 import { motion } from 'motion/react';
 
-interface Booking {
-  id: string;
-  fullName: string;
-  phone: string;
-  service: string;
-  dateTime: string;
-  notes?: string;
-  status: 'Confirmed' | 'Pending';
-  createdAt: string;
-}
-
 const MAIN_PHONE_NUMBER = '+639301911512';
 const MAIN_PHONE_NUMBER_DISPLAY = '+63 930 191 1512';
-const OWNER_MESSENGER_ID = import.meta.env.VITE_MESSENGER_ID || import.meta.env.VITE_FACEBOOK_MESSENGER_ID || '61592438219283';
-const BOOKING_EMAIL_RECEIVER = import.meta.env.VITE_BOOKING_EMAIL || import.meta.env.VITE_EMAIL_TO || 'modernbarbershopbykarl@gmail.com';
-
-const buildBookingMessage = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
-  const noteText = booking.notes?.trim();
-  return `Hi Karl! I want to book an appointment.\n\nName: ${booking.fullName}\nPhone: ${booking.phone}\nService: ${booking.service}\nDate & Time: ${booking.dateTime}${noteText ? `\nNotes: ${noteText}` : ''}\n\nPlease confirm this booking.`;
-};
-
-const getBookingSubmissionUrl = () => {
-  const configuredBaseUrl = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
-  return configuredBaseUrl ? `${configuredBaseUrl}/api/bookings` : '/api/bookings';
-};
-
-const getBookingMessengerUrl = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
-  const normalizedId = OWNER_MESSENGER_ID
-    .replace(/^https?:\/\/(m\.me|www\.facebook\.com|facebook\.com)\//i, '')
-    .replace(/\/$/, '')
-    .split('?')[0]
-    .split('/')[0]
-    .trim();
-
-  return `https://m.me/${normalizedId}?text=${encodeURIComponent(buildBookingMessage(booking))}`;
-};
-
-const getBookingMailtoHref = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
-  return `mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('New Booking Request')}&body=${encodeURIComponent(buildBookingMessage(booking))}`;
-};
 
 export default function App() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  
-  // Booking Form State
-  const [bookingForm, setBookingForm] = useState({
-    fullName: '',
-    phone: '',
-    service: 'Modern Haircut & Styling',
-    dateTime: '',
-    notes: ''
-  });
-  const [bookingLoading, setBookingLoading] = useState(false);
-  const [lastBookingResult, setLastBookingResult] = useState<any | null>(null);
-  const [bookingsList, setBookingsList] = useState<Booking[]>([]);
-  const [bookingSuccessModal, setBookingSuccessModal] = useState(false);
-  const [showIntegrationModal, setShowIntegrationModal] = useState(false);
 
   const galleryItems = [
     {
       title: 'Signature Fade',
-      category: 'Precision Cut',
-      image: 'https://images.pexels.com/photos/3993132/pexels-photo-3993132.jpeg?auto=compress&cs=tinysrgb&w=900'
+      description: 'A clean, sharp fade with a balanced silhouette for a refined everyday look.',
+      cutType: 'Precision Cut',
+      imageSource: 'https://i.pinimg.com/1200x/fa/49/16/fa4916a7e6174403412caab9df217998.jpg'
     },
     {
-      title: 'Shop Interior',
-      category: 'Studio Atmosphere',
-      image: '/interiorA.jpg'
+      title: 'Textured Crop',
+      description: 'Modern volume and structure with a natural finish that works for both casual and formal styles.',
+      cutType: 'Modern Style',
+      imageSource: 'https://i.pinimg.com/736x/36/d3/6a/36d36af0c1dfbb7895926ff90e4d7618.jpg'
     },
     {
-      title: 'Modern Styling',
-      category: 'Finished Look',
-      image: 'https://images.pexels.com/photos/7697712/pexels-photo-7697712.jpeg?auto=compress&cs=tinysrgb&w=900'
+      title: 'Classic Taper',
+      description: 'A timeless taper that keeps the sides clean while preserving sharp, polished shape on top.',
+      cutType: 'Clean Finish',
+      imageSource: 'https://i.pinimg.com/736x/27/a1/16/27a1160f5e2d8d531ee69af217759e05.jpg'
     },
     {
-      title: 'Classic Beard Trim',
-      category: 'Facial Styling',
-      image: 'https://images.pexels.com/photos/6007400/pexels-photo-6007400.jpeg?auto=compress&cs=tinysrgb&w=900'
+      title: 'Beard & Fade',
+      description: 'A seamless blend of beard detailing and fade styling for a bold, premium finish.',
+      cutType: 'Barber Combo',
+      imageSource: 'https://i.pinimg.com/736x/ec/75/24/ec7524ed2fe308e5fae088e939af54fe.jpg'
+    },
+    {
+      title: 'Classic Trim',
+      description: 'A seamless trim cut with a clean and modern result, premium finish.',
+      cutType: 'Barber Trim',
+      imageSource: 'https://i.pinimg.com/1200x/89/60/89/896089e3c4a06cb0e4ecc79ea69c73e1.jpg'
     }
   ];
+
+  const [activeSlide, setActiveSlide] = useState(0);
+
+  const goToPreviousSlide = () => {
+    setActiveSlide((prev) => (prev === 0 ? galleryItems.length - 1 : prev - 1));
+  };
+
+  const goToNextSlide = () => {
+    setActiveSlide((prev) => (prev + 1) % galleryItems.length);
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -120,129 +84,17 @@ export default function App() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    // Fetch initial bookings
-    fetch('/api/bookings')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setBookingsList(data);
-      })
-      .catch(err => console.error('Failed to fetch bookings', err));
-  }, []);
-
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bookingForm.fullName || !bookingForm.phone || !bookingForm.dateTime) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-
-    const payload = bookingForm;
-    setBookingLoading(true);
-    try {
-      const res = await fetch(getBookingSubmissionUrl(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      const rawResponse = await res.text();
-      let data: any = {};
-
-      if (rawResponse) {
-        try {
-          data = JSON.parse(rawResponse);
-        } catch {
-          data = { error: rawResponse };
-        }
-      }
-
-      const messengerUrl = getBookingMessengerUrl(payload);
-
-      if (res.ok) {
-        setLastBookingResult({
-          ...data,
-          notification: {
-            ...(data.notification || {}),
-            channel: 'messenger',
-            recipient: OWNER_MESSENGER_ID,
-            messengerUrl,
-            message: buildBookingMessage(payload)
-          }
-        });
-        setBookingsList(prev => [data.booking, ...prev]);
-        window.open(messengerUrl, '_blank', 'noopener,noreferrer');
-        setBookingSuccessModal(true);
-        setBookingForm({
-          fullName: '',
-          phone: '',
-          service: 'Modern Haircut & Styling',
-          dateTime: '',
-          notes: ''
-        });
-      } else {
-        window.open(messengerUrl, '_blank', 'noopener,noreferrer');
-        setLastBookingResult({
-          success: true,
-          booking: payload,
-          notification: {
-            channel: 'messenger',
-            recipient: OWNER_MESSENGER_ID,
-            message: buildBookingMessage(payload),
-            messengerUrl,
-            emailSent: false,
-            fallbackMode: true
-          }
-        });
-        setBookingSuccessModal(true);
-        setBookingForm({
-          fullName: '',
-          phone: '',
-          service: 'Modern Haircut & Styling',
-          dateTime: '',
-          notes: ''
-        });
-      }
-    } catch (err) {
-      console.error(err);
-      const messengerUrl = getBookingMessengerUrl(payload);
-      window.open(messengerUrl, '_blank', 'noopener,noreferrer');
-      setLastBookingResult({
-        success: true,
-        booking: payload,
-        notification: {
-          channel: 'messenger',
-          recipient: OWNER_MESSENGER_ID,
-          message: buildBookingMessage(payload),
-          messengerUrl,
-          emailSent: false,
-          fallbackMode: true
-        }
-      });
-      setBookingSuccessModal(true);
-      setBookingForm({
-        fullName: '',
-        phone: '',
-        service: 'Modern Haircut & Styling',
-        dateTime: '',
-        notes: ''
-      });
-    } finally {
-      setBookingLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-amber-500 selection:text-white">
       
       {/* Top Banner Notice */}
       <div className="bg-slate-900 text-amber-400 px-4 py-2.5 text-xs md:text-sm font-medium flex flex-wrap items-center justify-center gap-4 text-center z-50">
         <span className="flex items-center gap-1.5">
-          <Scissors className="w-3.5 h-3.5" /> Walk-ins Welcome! For Immediate Booking Call Karl: 
+          <Scissors className="w-3.5 h-3.5" /> Walk-ins Welcome! Call Karl: 
           <a href={`tel:${MAIN_PHONE_NUMBER}`} className="underline font-bold text-white hover:text-amber-300 ml-1">{MAIN_PHONE_NUMBER_DISPLAY}</a>
         </span>
         <span className="hidden md:inline text-slate-600">|</span>
-        <a href="https://m.me/61592438219283" target="_blank" rel="noopener noreferrer" className="underline font-bold text-white hover:text-amber-300">
+        <a href="https://m.me/karl.masing.77" target="_blank" rel="noopener noreferrer" className="underline font-bold text-white hover:text-amber-300">
           Chat on Facebook Messenger
         </a>
       </div>
@@ -276,8 +128,7 @@ export default function App() {
             <a href="#about" className="hover:text-amber-600 transition-colors">About Us</a>
             <a href="#services" className="hover:text-amber-600 transition-colors">Services & Pricing</a>
             <a href="#gallery" className="hover:text-amber-600 transition-colors">Gallery</a>
-            <a href="#booking" className="hover:text-amber-600 transition-colors">Booking</a>
-            <a href={`tel:${MAIN_PHONE_NUMBER}`} className="hover:text-amber-600 transition-colors">Contact Us</a>
+            <a href="#contact" className="hover:text-amber-600 transition-colors">Contact Me</a>
           </nav>
 
           {/* Quick CTA Actions */}
@@ -290,11 +141,11 @@ export default function App() {
               <span>{MAIN_PHONE_NUMBER_DISPLAY}</span>
             </a>
             <a 
-              href="#booking" 
+              href="#contact" 
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition-all transform hover:-translate-y-0.5"
             >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Book Appointment</span>
+              <Phone className="w-3.5 h-3.5" />
+              <span>Contact Me</span>
             </a>
           </div>
 
@@ -344,11 +195,11 @@ export default function App() {
               Gallery
             </a>
             <a 
-              href="#booking" 
+              href="#contact" 
               onClick={() => setMobileMenuOpen(false)}
               className="block px-3 py-2.5 rounded-lg text-base font-medium text-slate-800 hover:bg-slate-100"
             >
-              Booking
+              Contact Me
             </a>
             <a 
               href={`tel:${MAIN_PHONE_NUMBER}`} 
@@ -365,11 +216,11 @@ export default function App() {
                 <Phone className="w-4 h-4 text-amber-600" /> Call {MAIN_PHONE_NUMBER_DISPLAY}
               </a>
               <a 
-                href="#booking" 
+                href="#contact" 
                 onClick={() => setMobileMenuOpen(false)}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-amber-500 text-white font-bold text-sm shadow"
               >
-                <Calendar className="w-4 h-4" /> Book Appointment
+                <Phone className="w-4 h-4" /> Contact Me
               </a>
             </div>
           </motion.div>
@@ -406,13 +257,13 @@ export default function App() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
                 <a 
-                  href="#booking" 
+                  href="#contact" 
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-base shadow-lg shadow-amber-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2.5"
                 >
-                  <Calendar className="w-5 h-5" /> Book an Appointment
+                  <Phone className="w-5 h-5" /> Contact Me
                 </a>
                 <a 
-                  href="https://m.me/61592438219283" 
+                  href="https://m.me/karl.masing.77" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-800 font-semibold text-base border border-slate-200 transition-all flex items-center justify-center gap-2.5 shadow-sm"
@@ -557,7 +408,7 @@ export default function App() {
                   'Premium Pomades & Oils',
                   'In-Shop Snacks & Drinks',
                   'Strict Sterilization Protocols',
-                  'Easy Online Booking & Email'
+                  'Direct Messaging & Call Support'
                 ].map((item, idx) => (
                   <div key={idx} className="flex items-center gap-3 text-sm text-slate-800 font-medium">
                     <div className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
@@ -604,7 +455,6 @@ export default function App() {
               {
                 title: 'Modern Haircut & Styling',
                 price: 'PHP 180',
-                usd: '',
                 duration: '45 mins',
                 desc: 'Precision clipper or scissor cut tailored to your face shape, shampoo wash, hot towel finish & professional styling.',
                 popular: true,
@@ -613,7 +463,6 @@ export default function App() {
               {
                 title: 'Beard Trim & Line Up',
                 price: 'PHP 300',
-                usd: '',
                 duration: '30 mins',
                 desc: 'Detailed beard sculpt, straight razor edge clean-up, nourishing beard oil massage and mustache detailing.',
                 popular: false,
@@ -622,7 +471,6 @@ export default function App() {
               {
                 title: 'Hot Towel Traditional Shave',
                 price: 'PHP 350',
-                usd: '',
                 duration: '30 mins',
                 desc: 'Luxury pre-shave oil, steaming eucalyptus hot towels, warm lather straight razor shave & soothing aftershave balm.',
                 popular: false,
@@ -631,7 +479,6 @@ export default function App() {
               {
                 title: 'Dad & Lad Combo',
                 price: 'PHP 800',
-                usd: '~$28',
                 duration: '60 mins',
                 desc: 'Father and son matching precision haircuts. Quality bonding time with Karl in the master chair.',
                 popular: false,
@@ -640,7 +487,6 @@ export default function App() {
               {
                 title: 'Hair Color & Highlights',
                 price: 'PHP 950',
-                usd: '~$35',
                 duration: '90 mins',
                 desc: 'Modern grey blending, platinum bleaching, or stylish highlights with ammonia-free professional color.',
                 popular: false,
@@ -683,11 +529,10 @@ export default function App() {
                       <Clock className="w-3.5 h-3.5 text-amber-600" /> {srv.duration}
                     </span>
                     <a 
-                      href="#booking" 
-                      onClick={() => setBookingForm(prev => ({ ...prev, service: srv.title }))}
+                      href="#contact" 
                       className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-amber-500 hover:text-white text-slate-800 text-xs font-bold transition-colors flex items-center gap-1"
                     >
-                      Book This <ChevronRight className="w-3 h-3" />
+                      Contact Me <ChevronRight className="w-3 h-3" />
                     </a>
                   </div>
                 </div>
@@ -700,8 +545,8 @@ export default function App() {
 
       {/* Gallery Section */}
       <section id="gallery" className="py-24 bg-white border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 text-xs font-bold tracking-wide uppercase">
               <Scissors className="w-3.5 h-3.5" /> Portfolio
             </div>
@@ -709,401 +554,164 @@ export default function App() {
               The Gallery of Fresh Cuts
             </h2>
             <p className="text-slate-600 text-sm">
-              Explore brand insignia and professional works straight from Karl's chair.
+              Explore featured barber work and personal style transformations from Karl's chair.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {galleryItems.map((item, index) => (
-              <motion.div 
-                key={`${item.title}-${index}`} 
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-                className="group relative h-72 sm:h-80 overflow-hidden rounded-3xl border border-slate-200 shadow-md bg-slate-950 flex items-center justify-center"
+          <div className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-slate-950 shadow-xl">
+            <motion.div
+              key={galleryItems[activeSlide].title}
+              initial={{ opacity: 0, scale: 1.03 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.45, ease: 'easeInOut' }}
+              className="relative h-[520px] sm:h-[620px]"
+            >
+              <img
+                src={galleryItems[activeSlide].imageSource}
+                alt={galleryItems[activeSlide].title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent" />
+
+              <button
+                type="button"
+                onClick={goToPreviousSlide}
+                aria-label="Previous photo"
+                className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/85 text-slate-900 shadow-lg hover:bg-white transition flex items-center justify-center"
               >
-                <img 
-                  src={item.image} 
-                  alt={item.title} 
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/15 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-5">
-                  <div>
-                    <span className="text-amber-400 font-bold text-xs uppercase tracking-wider block">{item.category}</span>
-                    <span className="text-white font-serif text-base sm:text-lg">{item.title}</span>
-                  </div>
-                </div>
-              </motion.div>
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <button
+                type="button"
+                onClick={goToNextSlide}
+                aria-label="Next photo"
+                className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 rounded-full bg-white/85 text-slate-900 shadow-lg hover:bg-white transition flex items-center justify-center"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              <div className="absolute inset-x-0 bottom-0 z-10 p-6 sm:p-8">
+                <motion.div
+                  key={`${galleryItems[activeSlide].title}-content`}
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, ease: 'easeOut' }}
+                  className="max-w-xl rounded-2xl border border-white/15 bg-slate-950/55 backdrop-blur-md p-5 text-white shadow-lg"
+                >
+                  <span className="text-amber-400 font-bold text-[10px] uppercase tracking-[0.2em] block mb-2">
+                    {galleryItems[activeSlide].cutType}
+                  </span>
+                  <h3 className="text-2xl sm:text-3xl font-bold font-serif mb-2">
+                    {galleryItems[activeSlide].title}
+                  </h3>
+                  <p className="text-sm sm:text-base text-slate-200 leading-relaxed">
+                    {galleryItems[activeSlide].description}
+                  </p>
+                </motion.div>
+              </div>
+            </motion.div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-center gap-2.5 flex-wrap">
+            {galleryItems.map((item, index) => (
+              <button
+                key={`${item.title}-${index}`}
+                type="button"
+                onClick={() => setActiveSlide(index)}
+                aria-label={`Go to slide ${index + 1}`}
+                className={`h-2.5 rounded-full transition-all ${
+                  activeSlide === index ? 'w-10 bg-amber-500' : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                }`}
+              />
             ))}
           </div>
-
         </div>
       </section>
 
-      {/* Booking Form & Email Notification Section */}
-      <section id="booking" className="py-24 bg-slate-50 border-t border-slate-200 relative">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-12 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none hidden sm:block">
-              <Calendar className="w-48 h-48 text-amber-500" />
-            </div>
-
-            <div className="text-center max-w-xl mx-auto space-y-3 mb-10">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 text-xs font-bold tracking-wide uppercase">
-                <Calendar className="w-3.5 h-3.5" /> Instant Booking & Email Notice
-              </div>
-              <h2 className="text-3xl font-extrabold text-slate-900 font-serif">
-                Book Your Chair With Karl
-              </h2>
-              <p className="text-slate-600 text-sm">
-                Fill out the form below. A live booking email will be sent directly to Karl's inbox for instant review.
-              </p>
-            </div>
-
-            <form onSubmit={handleBookingSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Full Name *</label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="text" 
-                      required
-                      placeholder="e.g. John Doe"
-                      value={bookingForm.fullName}
-                      onChange={e => setBookingForm({...bookingForm, fullName: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Phone Number *</label>
-                  <div className="relative">
-                    <Phone className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="tel" 
-                      required
-                      placeholder="e.g. +63 917 123 4567"
-                      value={bookingForm.phone}
-                      onChange={e => setBookingForm({...bookingForm, phone: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Select Service *</label>
-                  <select 
-                    value={bookingForm.service}
-                    onChange={e => setBookingForm({...bookingForm, service: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3.5 text-sm text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
-                  >
-                    <option value="Modern Haircut & Styling">Modern Haircut & Styling (PHP 450)</option>
-                    <option value="Beard Trim & Line Up">Beard Trim & Line Up (PHP 300)</option>
-                    <option value="Hot Towel Traditional Shave">Hot Towel Traditional Shave (PHP 350)</option>
-                    <option value="Full Grooming Package">Full Grooming Package (PHP 750)</option>
-                    <option value="Dad & Lad Combo">Dad & Lad Combo (PHP 800)</option>
-                    <option value="Hair Color & Highlights">Hair Color & Highlights (PHP 950)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Preferred Date & Time *</label>
-                  <div className="relative">
-                    <Clock className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
-                    <input 
-                      type="datetime-local" 
-                      required
-                      value={bookingForm.dateTime}
-                      onChange={e => setBookingForm({...bookingForm, dateTime: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-3.5 text-sm text-slate-900 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Special Notes / Requests (Optional)</label>
-                  <textarea 
-                    rows={3}
-                    placeholder="e.g. Low skin fade, texture on top, preferred styling product..."
-                    value={bookingForm.notes}
-                    onChange={e => setBookingForm({...bookingForm, notes: e.target.value})}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:bg-white transition-all"
-                  ></textarea>
-                </div>
-
-              </div>
-
-              <div className="pt-2 flex justify-end">
-                <button 
-                  type="submit"
-                  disabled={bookingLoading}
-                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-sm shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2"
-                >
-                  {bookingLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Submitting & Sending Email...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" /> Send Booking
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-
-            {/* Recent Bookings Feed */}
-            <div className="mt-12 pt-8 border-t border-slate-100">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4 flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-amber-600" /> Recent Online Bookings Queue ({bookingsList.length})
-              </h3>
-              <div className="space-y-2.5 max-h-60 overflow-y-auto pr-2">
-                {bookingsList.map((bk) => (
-                  <div key={bk.id} className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-                    <div>
-                      <div className="text-slate-900 font-bold flex items-center gap-2">
-                        <span>{bk.fullName}</span>
-                        <span className="bg-amber-500/10 text-amber-700 px-2.5 py-0.5 rounded-full text-[10px] font-bold">{bk.service}</span>
-                      </div>
-                      <div className="text-slate-500 mt-0.5">
-                        Time: {new Date(bk.dateTime).toLocaleString()} • Phone: {bk.phone} {bk.notes ? `• Note: "${bk.notes}"` : ''}
-                      </div>
-                    </div>
-                    <span className="bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 px-3 py-1 rounded-full font-bold text-[10px] flex items-center gap-1">
-                      <Check className="w-3 h-3" /> Email Sent
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* Success Modal */}
-      {bookingSuccessModal && lastBookingResult && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <motion.div 
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative"
-          >
-            <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto text-amber-600">
-              <CheckCircle2 className="w-8 h-8" />
-            </div>
-
-            <div className="text-center space-y-2">
-              <h3 className="text-2xl font-extrabold text-slate-900 font-serif">Appointment Confirmed!</h3>
-              <p className="text-slate-600 text-sm">
-                Thank you, <strong className="text-slate-900">{lastBookingResult.booking.fullName}</strong>. Your booking for <strong className="text-amber-600">{lastBookingResult.booking.service}</strong> has been successfully registered.
-              </p>
-            </div>
-
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-500 border-b border-slate-200 pb-2">
-                <span className="font-bold text-amber-600 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" /> Booking Sent
-                </span>
-                <span>To: Karl in Messenger</span>
-              </div>
-              <p className="text-xs font-mono text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
-                "{lastBookingResult.notification?.message}"
-              </p>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <a 
-                href={`mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('New Booking Request')}&body=${encodeURIComponent(buildBookingEmailMessage(lastBookingResult.booking))}`} 
-                className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs text-center border border-slate-200"
-              >
-                Email Karl
-              </a>
-              <button 
-                onClick={() => setBookingSuccessModal(false)}
-                className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs text-center shadow"
-              >
-                Done
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Integration Code Modal */}
-      {showIntegrationModal && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
-            <div className="flex items-center justify-between border-b border-slate-200 pb-4">
-              <h3 className="text-xl font-bold text-slate-900 font-serif flex items-center gap-2">
-                <Code className="w-5 h-5 text-amber-600" /> Email Booking Notification Setup
-              </h3>
-              <button 
-                onClick={() => setShowIntegrationModal(false)}
-                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs text-slate-600">
-              <p className="leading-relaxed">
-                To send each live booking directly to Karl's email inbox, configure the following SMTP-based email flow in <code className="bg-slate-100 px-1.5 py-0.5 rounded text-amber-700 font-bold">server.ts</code>:
-              </p>
-
-              <pre className="bg-slate-950 text-amber-200 p-4 rounded-2xl border border-slate-800 text-[11px] font-mono overflow-x-auto">
-{`import nodemailer from 'nodemailer';
-
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT || 587),
-  secure: Number(process.env.EMAIL_PORT || 587) === 465,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
-
-await transporter.sendMail({
-  from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-  to: process.env.EMAIL_TO || 'karl@gmail.com',
-  subject: 'New Barbershop Booking',
-  text: 'A new booking was submitted.',
-});`}
-              </pre>
-
-              <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-2xl text-amber-900">
-                <span className="font-bold block mb-1">Environment Variables Required:</span>
-                <code>EMAIL_HOST</code>, <code>EMAIL_PORT</code>, <code>EMAIL_USER</code>, <code>EMAIL_PASS</code>, <code>EMAIL_FROM</code>, <code>EMAIL_TO</code>
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button 
-                onClick={() => setShowIntegrationModal(false)}
-                className="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow"
-              >
-                Got It
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Contact & Direct Action Section */}
+      {/* Contact Me Section */}
       <section id="contact" className="py-24 bg-white border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            
-            <div className="lg:col-span-6 space-y-6">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-lg">
+            <div className="text-center max-w-2xl mx-auto space-y-3 mb-10">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 text-xs font-bold tracking-wide uppercase">
-                <Phone className="w-3.5 h-3.5" /> Get in Touch
+                <Phone className="w-3.5 h-3.5" /> Contact Me
               </div>
-
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-serif">
-                Visit Karl's Chair Today
-              </h2>
-
-              <p className="text-slate-600 text-sm leading-relaxed">
-                Have questions or need a custom grooming package? Reach out via phone or Facebook Messenger for instant replies.
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-serif">Contact Karl Masing</h2>
+              <p className="text-slate-600 text-sm">
+                Reach out directly through his Facebook profile, WhatsApp, call, or message app.
               </p>
-
-              {/* Contact Cards */}
-              <div className="space-y-4 pt-2">
-                <a 
-                  href={`tel:${MAIN_PHONE_NUMBER}`} 
-                  className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group shadow-sm"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-colors">
-                    <Phone className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Direct Phone</span>
-                    <span className="text-slate-900 font-bold text-base">{MAIN_PHONE_NUMBER_DISPLAY}</span>
-                  </div>
-                </a>
-
-                <a 
-                  href="https://m.me/61592438219283" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group shadow-sm"
-                >
-                  <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                    <MessageCircle className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Facebook Messenger</span>
-                    <span className="text-slate-900 font-bold text-base">m.me/61592438219283</span>
-                  </div>
-                </a>
-
-                <div className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
-                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Studio Location</span>
-                    <span className="text-slate-900 font-bold text-base">13 Flores de Mayo, Novaliches, Quezon City, 1118 Metro Manila</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
-            {/* Right Map / Hours Card */}
-            <div className="lg:col-span-6 bg-slate-900 text-white border border-slate-800 rounded-3xl p-6 sm:p-10 space-y-6 shadow-xl">
-              <h3 className="text-xl font-bold font-serif flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-400" /> Shop Working Hours
-              </h3>
-
-              <div className="space-y-3 divide-y divide-slate-800 text-sm">
-                <div className="flex justify-between pt-2">
-                  <span className="text-slate-300">Monday – Friday</span>
-                  <span className="font-semibold text-amber-400">9:00 AM – 8:00 PM</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <a
+                href="https://m.me/karl.masing.77"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group shadow-sm"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <MessageCircle className="w-5 h-5" />
                 </div>
-                <div className="flex justify-between pt-3">
-                  <span className="text-slate-300">Saturday</span>
-                  <span className="font-semibold text-amber-400">9:00 AM – 9:00 PM</span>
+                <div>
+                  <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Owner</span>
+                  <span className="text-slate-900 font-bold text-base">Karl Masing</span>
                 </div>
-                <div className="flex justify-between pt-3">
-                  <span className="text-slate-300">Sunday</span>
-                  <span className="font-semibold text-amber-400">10:00 AM – 6:00 PM</span>
+              </a>
+
+              <a
+                href="https://wa.me/639301911512"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group shadow-sm"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <MessageCircle className="w-5 h-5" />
                 </div>
-              </div>
+                <div>
+                  <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">WhatsApp Number</span>
+                  <span className="text-slate-900 font-bold text-base">+63 930 191 1512</span>
+                </div>
+              </a>
 
-              <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 space-y-1">
-                <span className="font-bold block">💡 Walk-Ins Always Welcome</span>
-                <span>Appointments are prioritized. Please book online or call 15 minutes prior to arrival.</span>
-              </div>
+              <a
+                href={`tel:${MAIN_PHONE_NUMBER}`}
+                className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group shadow-sm"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Call Me</span>
+                  <span className="text-slate-900 font-bold text-base">Open phone keypad</span>
+                </div>
+              </a>
 
-              <div className="pt-2">
-                <a 
-                  href="#booking"
-                  className="w-full py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs uppercase tracking-wider text-center block shadow transition-colors"
-                >
-                  Book Appointment Now
-                </a>
-              </div>
+              <a
+                href={`sms:${MAIN_PHONE_NUMBER}`}
+                className="flex items-center gap-4 p-5 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors group shadow-sm"
+              >
+                <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-600 flex items-center justify-center group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                  <MessageCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-xs text-slate-400 uppercase tracking-wider block font-semibold">Message Me</span>
+                  <span className="text-slate-900 font-bold text-base">Open messaging app</span>
+                </div>
+              </a>
             </div>
-
           </div>
-
         </div>
       </section>
 
       {/* Floating CTA Buttons */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
         <a 
-          href={`mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('Booking Inquiry')}&body=${encodeURIComponent('Hi Karl, I would like to book an appointment.')}`} 
-          aria-label="Email Barbershop"
-          className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-500 text-white flex items-center justify-center shadow-xl transition-transform hover:scale-110"
+          href="https://wa.me/639301911512"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="WhatsApp Barbershop"
+          className="w-12 h-12 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center shadow-xl transition-transform hover:scale-110"
         >
           <MessageCircle className="w-6 h-6" />
         </a>
@@ -1137,7 +745,7 @@ await transporter.sendMail({
             <a href="#home" className="hover:text-amber-400 transition-colors">Home</a>
             <a href="#about" className="hover:text-amber-400 transition-colors">About Us</a>
             <a href="#services" className="hover:text-amber-400 transition-colors">Services</a>
-            <a href="#booking" className="hover:text-amber-400 transition-colors">Booking</a>
+            <a href="#contact" className="hover:text-amber-400 transition-colors">Contact Me</a>
             <a href="#contact" className="hover:text-amber-400 transition-colors">Contact</a>
           </div>
 
