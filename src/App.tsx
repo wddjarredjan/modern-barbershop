@@ -17,6 +17,7 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
+  Facebook,
   Info,
   DollarSign
 } from 'lucide-react';
@@ -257,10 +258,12 @@ export default function App() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
                 <a 
-                  href="#contact" 
-                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-base shadow-lg shadow-amber-500/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2.5"
+                  href="https://www.facebook.com/profile.php?id=61592438219283"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-base shadow-lg shadow-blue-600/25 transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2.5"
                 >
-                  <Phone className="w-5 h-5" /> Contact Me
+                  <Facebook className="w-5 h-5" /> Visit Our Page
                 </a>
                 <a 
                   href="https://m.me/karl.masing.77" 
