@@ -35,9 +35,37 @@ function getEmailConfig() {
     configured: missing.length === 0
   };
 }
+function getMessengerConfig() {
+  const messengerId = process.env.FACEBOOK_MESSENGER_ID || process.env.MESSENGER_ID || "61592438219283";
+  return {
+    messengerId,
+    messengerUrl: `https://m.me/${messengerId}`
+  };
+}
+function listenOnAvailablePort(app, preferredPort) {
+  const portsToTry = Array.from(/* @__PURE__ */ new Set([preferredPort, 3001, 3002, 3003, 4e3, 4001, 5e3, 8080, 9e3]));
+  let portIndex = 0;
+  const attemptListen = () => {
+    const port = portsToTry[portIndex];
+    const server = app.listen(port, "0.0.0.0", () => {
+      console.log(`[Server] Modern Barbershop by Karl running on http://0.0.0.0:${port}`);
+    });
+    server.on("error", (error) => {
+      if (error.code === "EADDRINUSE" && portIndex < portsToTry.length - 1) {
+        portIndex += 1;
+        console.warn(`[Server] Port ${port} is in use. Retrying on ${portsToTry[portIndex]}...`);
+        attemptListen();
+        return;
+      }
+      console.error("[Server] Failed to start server:", error);
+      process.exit(1);
+    });
+  };
+  attemptListen();
+}
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3e3;
+  const PORT = Number(process.env.PORT || 3e3);
   app.use(express.json());
   const bookings = [
     {
@@ -85,6 +113,18 @@ async function startServer() {
         createdAt: (/* @__PURE__ */ new Date()).toISOString()
       };
       bookings.unshift(newBooking);
+      const messengerConfig = getMessengerConfig();
+      const messengerMessage = `Hi Karl! I want to book an appointment.
+
+Name: ${fullName}
+Phone: ${phone}
+Service: ${service}
+Date & Time: ${dateTime}
+Notes: ${notes || "None"}
+
+Please confirm this booking.`;
+      const messengerUrl = `${messengerConfig.messengerUrl}?text=${encodeURIComponent(messengerMessage)}`;
+      console.log(`[BOOKING PREPARED FOR MESSENGER]: ${messengerConfig.messengerId}`);
       const config = getEmailConfig();
       const emailRecipient = config.emailTo;
       const emailSubject = `New Barbershop Booking: ${fullName}`;
@@ -97,62 +137,60 @@ Date & Time: ${dateTime}
 Notes: ${notes || "None"}
 
 This booking was submitted through the website.`;
-      console.log(`[EMAIL NOTIFICATION DISPATCHED to ${emailRecipient}]: ${emailSubject}`);
       let emailSent = false;
-      if (!config.configured) {
-        console.error("Email configuration missing. Missing values:", config.missing.join(", "));
-        return res.status(500).json({
-          error: `Booking email is not configured. Missing: ${config.missing.join(", ")}`,
-          missing: config.missing
-        });
-      }
-      if (config.resendApiKey) {
-        const resend = new Resend(config.resendApiKey);
-        const { error } = await resend.emails.send({
-          from: config.emailFrom,
-          to: [config.emailTo],
-          subject: emailSubject,
-          text: emailMessage,
-          html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
-        });
-        if (error) {
-          console.error("Resend send failed:", error);
-          return res.status(500).json({ error: error.message || "Failed to send booking email via Resend." });
-        }
-        emailSent = true;
-        console.log(`[EMAIL SENT via Resend to ${emailRecipient}]`);
-      } else {
-        const transporter = nodemailer.createTransport({
-          host: config.emailHost,
-          port: config.emailPort,
-          secure: config.emailPort === 465,
-          auth: {
-            user: config.emailUser,
-            pass: config.emailPass
-          },
-          tls: {
-            rejectUnauthorized: false
+      if (config.configured) {
+        if (config.resendApiKey) {
+          const resend = new Resend(config.resendApiKey);
+          const { error } = await resend.emails.send({
+            from: config.emailFrom,
+            to: [config.emailTo],
+            subject: emailSubject,
+            text: emailMessage,
+            html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
+          });
+          if (error) {
+            console.error("Resend send failed:", error);
+          } else {
+            emailSent = true;
+            console.log(`[EMAIL SENT via Resend to ${emailRecipient}]`);
           }
-        });
-        await transporter.sendMail({
-          from: config.emailFrom,
-          to: config.emailTo,
-          subject: emailSubject,
-          text: emailMessage,
-          html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
-        });
-        emailSent = true;
-        console.log(`[EMAIL SENT via SMTP to ${emailRecipient}]`);
+        } else {
+          const transporter = nodemailer.createTransport({
+            host: config.emailHost,
+            port: config.emailPort,
+            secure: config.emailPort === 465,
+            auth: {
+              user: config.emailUser,
+              pass: config.emailPass
+            },
+            tls: {
+              rejectUnauthorized: false
+            }
+          });
+          await transporter.sendMail({
+            from: config.emailFrom,
+            to: config.emailTo,
+            subject: emailSubject,
+            text: emailMessage,
+            html: `<h3>New Barbershop Booking</h3><p><strong>Client:</strong> ${fullName}</p><p><strong>Phone:</strong> ${phone}</p><p><strong>Service:</strong> ${service}</p><p><strong>Date & Time:</strong> ${dateTime}</p><p><strong>Notes:</strong> ${notes || "None"}</p>`
+          });
+          emailSent = true;
+          console.log(`[EMAIL SENT via SMTP to ${emailRecipient}]`);
+        }
+      } else {
+        console.warn("Email configuration missing. Booking is still prepared for Messenger delivery.");
       }
       res.status(201).json({
         success: true,
-        message: "Appointment booked successfully! A live booking email has been sent to the receiver.",
+        message: "Appointment booked successfully! The booking details are ready to send to the owner in Messenger.",
         booking: newBooking,
         notification: {
-          recipient: emailRecipient,
-          subject: emailSubject,
-          message: emailMessage,
-          emailSent
+          channel: "messenger",
+          recipient: messengerConfig.messengerId,
+          messengerUrl,
+          message: messengerMessage,
+          emailSent,
+          emailRecipient: emailRecipient || "not-configured"
         }
       });
     } catch (err) {
@@ -212,8 +250,6 @@ This booking was submitted through the website.`;
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
-  app.listen(Number(PORT), "0.0.0.0", () => {
-    console.log(`[Server] Modern Barbershop by Karl running on http://0.0.0.0:${PORT}`);
-  });
+  listenOnAvailablePort(app, PORT);
 }
 startServer();

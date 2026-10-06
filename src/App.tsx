@@ -39,11 +39,12 @@ interface Booking {
 
 const MAIN_PHONE_NUMBER = '+639301911512';
 const MAIN_PHONE_NUMBER_DISPLAY = '+63 930 191 1512';
+const OWNER_MESSENGER_ID = import.meta.env.VITE_MESSENGER_ID || import.meta.env.VITE_FACEBOOK_MESSENGER_ID || '61592438219283';
 const BOOKING_EMAIL_RECEIVER = import.meta.env.VITE_BOOKING_EMAIL || import.meta.env.VITE_EMAIL_TO || 'modernbarbershopbykarl@gmail.com';
 
-const buildBookingEmailMessage = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
+const buildBookingMessage = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
   const noteText = booking.notes?.trim();
-  return `New booking request from ${booking.fullName} (${booking.phone}) for ${booking.service} on ${booking.dateTime}${noteText ? ` Notes: ${noteText}` : ''}`;
+  return `Hi Karl! I want to book an appointment.\n\nName: ${booking.fullName}\nPhone: ${booking.phone}\nService: ${booking.service}\nDate & Time: ${booking.dateTime}${noteText ? `\nNotes: ${noteText}` : ''}\n\nPlease confirm this booking.`;
 };
 
 const getBookingSubmissionUrl = () => {
@@ -51,8 +52,19 @@ const getBookingSubmissionUrl = () => {
   return configuredBaseUrl ? `${configuredBaseUrl}/api/bookings` : '/api/bookings';
 };
 
+const getBookingMessengerUrl = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
+  const normalizedId = OWNER_MESSENGER_ID
+    .replace(/^https?:\/\/(m\.me|www\.facebook\.com|facebook\.com)\//i, '')
+    .replace(/\/$/, '')
+    .split('?')[0]
+    .split('/')[0]
+    .trim();
+
+  return `https://m.me/${normalizedId}?text=${encodeURIComponent(buildBookingMessage(booking))}`;
+};
+
 const getBookingMailtoHref = (booking: { fullName: string; phone: string; service: string; dateTime: string; notes?: string }) => {
-  return `mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('New Booking Request')}&body=${encodeURIComponent(buildBookingEmailMessage(booking))}`;
+  return `mailto:${BOOKING_EMAIL_RECEIVER}?subject=${encodeURIComponent('New Booking Request')}&body=${encodeURIComponent(buildBookingMessage(booking))}`;
 };
 
 export default function App() {
@@ -145,9 +157,21 @@ export default function App() {
         }
       }
 
+      const messengerUrl = getBookingMessengerUrl(payload);
+
       if (res.ok) {
-        setLastBookingResult(data);
+        setLastBookingResult({
+          ...data,
+          notification: {
+            ...(data.notification || {}),
+            channel: 'messenger',
+            recipient: OWNER_MESSENGER_ID,
+            messengerUrl,
+            message: buildBookingMessage(payload)
+          }
+        });
         setBookingsList(prev => [data.booking, ...prev]);
+        window.open(messengerUrl, '_blank', 'noopener,noreferrer');
         setBookingSuccessModal(true);
         setBookingForm({
           fullName: '',
@@ -157,14 +181,15 @@ export default function App() {
           notes: ''
         });
       } else {
-        const fallbackHref = getBookingMailtoHref(payload);
-        window.location.href = fallbackHref;
+        window.open(messengerUrl, '_blank', 'noopener,noreferrer');
         setLastBookingResult({
           success: true,
           booking: payload,
           notification: {
-            recipient: BOOKING_EMAIL_RECEIVER,
-            message: buildBookingEmailMessage(payload),
+            channel: 'messenger',
+            recipient: OWNER_MESSENGER_ID,
+            message: buildBookingMessage(payload),
+            messengerUrl,
             emailSent: false,
             fallbackMode: true
           }
@@ -180,14 +205,16 @@ export default function App() {
       }
     } catch (err) {
       console.error(err);
-      const fallbackHref = getBookingMailtoHref(payload);
-      window.location.href = fallbackHref;
+      const messengerUrl = getBookingMessengerUrl(payload);
+      window.open(messengerUrl, '_blank', 'noopener,noreferrer');
       setLastBookingResult({
         success: true,
         booking: payload,
         notification: {
-          recipient: BOOKING_EMAIL_RECEIVER,
-          message: buildBookingEmailMessage(payload),
+          channel: 'messenger',
+          recipient: OWNER_MESSENGER_ID,
+          message: buildBookingMessage(payload),
+          messengerUrl,
           emailSent: false,
           fallbackMode: true
         }
