@@ -836,15 +836,7 @@ export default function App() {
 
               </div>
 
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <button 
-                  type="button"
-                  onClick={() => setShowIntegrationModal(true)}
-                  className="text-xs text-amber-600 hover:underline font-semibold flex items-center gap-1.5"
-                >
-                  <Code className="w-4 h-4" /> View Email Notification Setup
-                </button>
-
+              <div className="pt-2 flex justify-end">
                 <button 
                   type="submit"
                   disabled={bookingLoading}
