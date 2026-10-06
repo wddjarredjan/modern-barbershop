@@ -330,7 +330,7 @@ export default function App() {
                       <Clock className="w-4 h-4 text-amber-600 shrink-0" />
                       <div>
                         <span className="block text-slate-400 text-[10px] uppercase font-semibold">Hours</span>
-                        <span className="font-bold text-slate-800">Mon-Sat: 9am-8pm</span>
+                        <span className="font-bold text-slate-800">Mon-Sun: 9am-8pm</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-2.5 bg-slate-50 p-3 rounded-xl border border-slate-100">
