@@ -857,7 +857,7 @@ export default function App() {
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4" /> Confirm & Submit to Karl Email
+                      <Send className="w-4 h-4" /> Send Booking
                     </>
                   )}
                 </button>
@@ -916,9 +916,9 @@ export default function App() {
             <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
               <div className="flex items-center justify-between text-xs text-slate-500 border-b border-slate-200 pb-2">
                 <span className="font-bold text-amber-600 flex items-center gap-1">
-                  <Phone className="w-3.5 h-3.5" /> Booking Email Sent
+                  <Phone className="w-3.5 h-3.5" /> Booking Sent
                 </span>
-                <span>To: Karl's Email Inbox</span>
+                <span>To: Karl in Messenger</span>
               </div>
               <p className="text-xs font-mono text-slate-700 bg-white p-3 rounded-xl border border-slate-200">
                 "{lastBookingResult.notification?.message}"
