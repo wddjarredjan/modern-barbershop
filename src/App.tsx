@@ -455,6 +455,7 @@ export default function App() {
               {
                 title: 'Modern Haircut & Styling',
                 price: 'PHP 180',
+                usd: '',
                 duration: '45 mins',
                 desc: 'Precision clipper or scissor cut tailored to your face shape, shampoo wash, hot towel finish & professional styling.',
                 popular: true,
@@ -463,6 +464,7 @@ export default function App() {
               {
                 title: 'Beard Trim & Line Up',
                 price: 'PHP 300',
+                usd: '',
                 duration: '30 mins',
                 desc: 'Detailed beard sculpt, straight razor edge clean-up, nourishing beard oil massage and mustache detailing.',
                 popular: false,
@@ -471,6 +473,7 @@ export default function App() {
               {
                 title: 'Hot Towel Traditional Shave',
                 price: 'PHP 350',
+                usd: '',
                 duration: '30 mins',
                 desc: 'Luxury pre-shave oil, steaming eucalyptus hot towels, warm lather straight razor shave & soothing aftershave balm.',
                 popular: false,
@@ -479,6 +482,7 @@ export default function App() {
               {
                 title: 'Dad & Lad Combo',
                 price: 'PHP 800',
+                usd: '',
                 duration: '60 mins',
                 desc: 'Father and son matching precision haircuts. Quality bonding time with Karl in the master chair.',
                 popular: false,
@@ -487,6 +491,7 @@ export default function App() {
               {
                 title: 'Hair Color & Highlights',
                 price: 'PHP 950',
+                usd: '',
                 duration: '90 mins',
                 desc: 'Modern grey blending, platinum bleaching, or stylish highlights with ammonia-free professional color.',
                 popular: false,
