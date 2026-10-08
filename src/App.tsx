@@ -241,18 +241,18 @@ export default function App() {
               className="lg:col-span-7 space-y-6 text-center lg:text-left"
             >
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-700 text-xs font-bold tracking-wide uppercase">
-                <Scissors className="w-3.5 h-3.5" /> Premium Modern Barbershop
+                <Scissors className="w-3.5 h-3.5" /> Best Barbershop in Novaliches
               </div>
               
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-tight font-serif">
-                Precision Cuts & <br />
+                Modern Barbershop <br />
                 <span className="text-amber-600">
-                  Modern Styling
-                </span> by Karl
+                  by Karl
+                </span>
               </h1>
               
               <p className="text-lg text-slate-600 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
-                Step into Karl's chair for master-level fades, hot towel straight razor shaves, and immaculate styling tailored precisely to your personal aesthetic. Look sharp, feel confident.
+                Modern Barbershop by Karl is a trusted barbershop in Novaliches, Quezon City for premium men’s haircut, fade haircut, beard grooming, taper cut, and hot towel shave services. Look sharp, feel confident.
               </p>
 
               {/* Action Buttons */}
