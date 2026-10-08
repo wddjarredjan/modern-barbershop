@@ -67,6 +67,10 @@
         <img src="/logo.jpg" alt="Modern Barbershop logo" />
       </div>
     </div>
+    <script>
+      // record earliest possible start time so the loader can guarantee minimum duration
+      window.__loadingStart = (performance && performance.now) ? performance.now() : Date.now();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
